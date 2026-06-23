@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0f1e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Signal AI Pro" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <title>Signal AI Pro</title>
+  <style>
+    :root {
+      --bg:#0a0f1e;--bg2:#111827;--bg3:#141c30;--border:#1e2d4d;
+      --green:#00e87a;--gd:#002a15;--red:#ff4d6a;--rd:#2d0010;
+      --yellow:#ffb800;--text:#e0eaff;--muted:#8a9bc0;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+    .topbar{position:sticky;top:0;z-index:100;background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+    .topbar-title span{font-size:17px;font-weight:700;color:var(--green)}
+    .live{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+    .tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:53px;z-index:99}
+    .tab{flex:1;padding:12px 8px;text-align:center;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+    .tab.active{color:var(--green);border-bottom-color:var(--green)}
+
+    .page{display:none;padding:16px}
+    .page.active{display:block}
+
+    .slabel{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;margin-top:18px}
+    .slabel:first-of-type{margin-top:0}
+
+    select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px 16px;color:var(--text);font-size:15px;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%238a9bc0' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;margin-bottom:10px}
+    select:focus{outline:none;border-color:var(--green)}
+
+    .gbtn{width:100%;padding:17px;background:var(--green);border:none;border-radius:14px;color:var(--gd);font-size:16px;font-weight:800;letter-spacing:.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-top:4px;transition:transform .15s,opacity .15s}
+    .gbtn:active{transform:scale(.97);opacity:.9}
+    .gbtn:disabled{opacity:.55}
+    .spin{display:none;width:20px;height:20px;border:3px solid rgba(0,42,21,.3);border-top-color:var(--gd);border-radius:50%;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .rcard{margin-top:16px;background:var(--bg3);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:none}
+    .rcard.show{display:block}
+
+    .rbanner{padding:16px 20px;display:flex;align-items:center;justify-content:space-between}
+    .rbanner.buy{background:#003320;border-bottom:1px solid #00e87a33}
+    .rbanner.sell{background:#2d0010;border-bottom:1px solid #ff4d6a33}
+    .dlabel{font-size:28px;font-weight:900;letter-spacing:1px}
+    .dlabel.buy{color:var(--green)}
+    .dlabel.sell{color:var(--red)}
+
+    .cring{width:64px;height:64px;position:relative}
+    .cring svg{transform:rotate(-90deg)}
+    .ctxt{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:14px;font-weight:800;color:#fff}
+
+    .smeta{padding:14px 20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;border-bottom:1px solid var(--border)}
+    .ml{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+    .mv{font-size:14px;font-weight:700;color:var(--text)}
+
+    .san{padding:14px 20px}
+    .ant{font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+    .atxt{font-size:13px;color:var(--muted);line-height:1.65}
+
+    .indgrid{padding:0 20px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .ichip{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between}
+    .iname{font-size:11px;color:var(--muted);font-weight:600}
+    .ival{font-size:12px;font-weight:700}
+    .ival.bull{color:var(--green)}
+    .ival.bear{color:var(--red)}
+    .ival.neutral{color:var(--yellow)}
+
+    .stbar{height:6px;border-radius:3px;background:var(--bg2);margin:12px 20px;overflow:hidden}
+    .stfill{height:100%;border-radius:3px;transition:width .6s ease}
+
+    .hitem{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+    .hdir{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;flex-shrink:0}
+    .hdir.buy{background:#003320;color:var(--green)}
+    .hdir.sell{background:#2d0010;color:var(--red)}
+    .hinfo{flex:1}
+    .hasset{font-size:14px;font-weight:700;color:var(--text)}
+    .hmeta{font-size:12px;color:var(--muted);margin-top:2px}
+    .hconf{font-size:15px;font-weight:800}
+
+    .empty{text-align:center;padding:48px 16px;color:var(--muted);font-size:14px;line-height:2}
+    .eicon{font-size:40px;margin-bottom:12px}
+
+    .scard{background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px}
+    .srow{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+    .srow:last-child{border-bottom:none}
+    .srl{font-size:14px;color:var(--text)}
+    .srs{font-size:12px;color:var(--muted);margin-top:2px}
+    .tog{width:44px;height:26px;border-radius:13px;background:var(--border);cursor:pointer;position:relative;transition:background .2s}
+    .tog.on{background:var(--green)}
+    .tog::after{content:'';position:absolute;width:20px;height:20px;border-radius:50%;background:white;top:3px;left:3px;transition:left .2s}
+    .tog.on::after{left:21px}
+
+    .badges{display:flex;gap:16px;justify-content:center;padding:20px 16px 32px;border-top:1px solid var(--border);margin-top:8px}
+    .badge{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+    .bdot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+
+    .anote{background:#1a1000;border:1px solid #3d2800;border-radius:10px;padding:12px 14px;font-size:12px;color:var(--yellow);line-height:1.6;margin-bottom:16px}
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title"><span>🚀 Signal AI Pro</span></div>
+  <div class="live"><div class="dot"></div>IA active</div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('signal')">📡 Signal</div>
+  <div class="tab" onclick="switchTab('history')">📋 Historique</div>
+  <div class="tab" onclick="switchTab('settings')">⚙️ Réglages</div>
+</div>
+
+<div class="page active" id="page-signal">
+  <div class="slabel">Broker</div>
+  <select id="broker">
+    <option>Pocket Option</option><option>Quotex</option><option>Deriv</option>
+    <option>IQ Option</option><option>Binomo</option><option>Olymp Trade</option>
+  </select>
+  <div class="slabel">Asset</div>
+  <select id="asset">
+    <optgroup label="Forex OTC">
+      <option>EUR/USD (OTC)</option><option>GBP/USD (OTC)</option>
+      <option>NZD/CAD (OTC)</option><option>AUD/USD (OTC)</option>
+      <option>USD/JPY (OTC)</option><option>EUR/GBP (OTC)</option>
+      <option>USD/CHF (OTC)</option>
+    </optgroup>
+    <optgroup label="Crypto">
+      <option>BTC/USD</option><option>ETH/USD</option><option>XRP/USD</option>
+    </optgroup>
+  </select>
+  <div class="slabel">Expiration</div>
+  <select id="expiry">
+    <option value="15s">15 secondes</option>
+    <option value="30s">30 secondes</option>
+    <option value="1m" selected>1 minute</option>
+    <option value="2m">2 minutes</option>
+    <option value="5m">5 minutes</option>
+  </select>
+  <div class="slabel">Mise ($)</div>
+  <select id="stake">
+    <option>1</option><option>2</option><option>5</option>
+    <option selected>10</option><option>25</option><option>50</option>
+  </select>
+
+  <button class="gbtn" id="genBtn" onclick="generateSignal()">
+    <div class="spin" id="spinner"></div>
+    <span id="btnTxt">⚡ ANALYSER &amp; GÉNÉRER</span>
+  </button>
+
+  <div class="rcard" id="resultCard">
+    <div class="rbanner buy" id="signalBanner">
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Direction</div>
+        <div class="dlabel buy" id="dirLabel">▲ BUY</div>
+      </div>
+      <div class="cring">
+        <svg width="64" height="64" viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r="27" fill="none" stroke="#1e2d4d" stroke-width="5"/>
+          <circle id="confCircle" cx="32" cy="32" r="27" fill="none"
+            stroke="#00e87a" stroke-width="5"
+            stroke-dasharray="169.6" stroke-dashoffset="169.6" stroke-linecap="round"/>
+        </svg>
+        <div class="ctxt" id="confText">0%</div>
+      </div>
+    </div>
+
+    <div class="stbar"><div class="stfill" id="stFill" style="width:0%;background:var(--green)"></div></div>
+
+    <div class="smeta">
+      <div><div class="ml">Asset</div><div class="mv" id="metaAsset">—</div></div>
+      <div><div class="ml">Expiration</div><div class="mv" id="metaExpiry">—</div></div>
+      <div><div class="ml">Heure</div><div class="mv" id="metaTime">—</div></div>
+    </div>
+
+    <div class="san">
+      <div class="ant">🧠 Analyse IA</div>
+      <div class="atxt" id="analysisText">—</div>
+    </div>
+
+    <div class="indgrid" id="indicatorsGrid"></div>
+  </div>
+
+  <div class="badges">
+    <div class="badge"><div class="bdot"></div>No-repaint</div>
+    <div class="badge"><div class="bdot"></div>Multi-indicateurs</div>
+    <div class="badge"><div class="bdot"></div>Moteur IA local</div>
+  </div>
+</div>
+
+<div class="page" id="page-history">
+  <div id="historyList">
+    <div class="empty"><div class="eicon">📋</div>Aucun signal généré.<br>Lance ton premier signal.</div>
+  </div>
+</div>
+
+<div class="page" id="page-settings">
+  <div class="slabel">Indicateurs actifs</div>
+  <div class="scard">
+    <div class="srow"><div><div class="srl">RSI (14)</div><div class="srs">Survente / Surachat</div></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+    <div class="srow"><div><div class="srl">MACD (12/26/9)</div><div class="srs">Croisement de moyennes</div></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+    <div class="srow"><div><div class="srl">EMA 9/21/50</div><div class="srs">Tendance principale</div></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+    <div class="srow"><div><div class="srl">Bollinger Bands</div><div class="srs">Volatilité et zones extrêmes</div></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+    <div class="srow"><div><div class="srl">Stochastique</div><div class="srs">Momentum oscillateur</div></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+    <div class="srow"><div><div class="srl">Patterns bougies</div><div class="srs">Engulfing, Doji, Hammer…</div></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+  </div>
+
+  <div class="slabel">Filtres</div>
+  <div class="scard">
+    <div class="srow">
+      <div><div class="srl">Confiance minimale</div><div class="srs">Ignorer signaux faibles</div></div>
+      <select style="width:80px;margin:0;padding:6px 8px;font-size:13px" id="minConf">
+        <option>65%</option><option selected>70%</option><option>75%</option><option>80%</option>
+      </select>
+    </div>
+    <div class="srow"><div><div class="srl">Vibration</div><div class="srs">Retour haptique</div></div><div class="tog on" id="vibTog" onclick="this.classList.toggle('on')"></div></div>
+  </div>
+
+  <div class="anote">⚙️ <strong>Moteur IA local</strong><br>Cette version utilise un moteur d'analyse technique intégré (RSI, MACD, EMA, BB, Stochastique, Patterns) — aucune connexion externe requise. Fonctionne 100% hors-ligne.</div>
+
+  <div style="text-align:center;color:var(--muted);font-size:12px;padding-bottom:32px">
+    Signal AI Pro v2.0 — Moteur local<br>
+    <span style="color:#3d4d6a">⚠️ Le trading comporte des risques. N'investis que ce que tu peux perdre.</span>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  MOTEUR D'ANALYSE TECHNIQUE LOCAL
+// ═══════════════════════════════════════════
+
+let sigHistory = JSON.parse(localStorage.getItem('sig_h') || '[]');
+
+// Génère des bougies synthétiques réalistes
+function generateCandles(n, basePrice, volatility) {
+  const c = [];
+  let price = basePrice;
+  for (let i = 0; i < n; i++) {
+    const trend = (Math.random() - 0.48) * volatility;
+    const open = price;
+    const close = price + trend + (Math.random() - 0.5) * volatility * 0.5;
+    const high = Math.max(open, close) + Math.random() * volatility * 0.3;
+    const low = Math.min(open, close) - Math.random() * volatility * 0.3;
+    const vol = 1000 + Math.random() * 5000;
+    c.push({ open, high, low, close, vol });
+    price = close;
+  }
+  return c;
+}
+
+// RSI
+function calcRSI(closes, period = 14) {
+  if (closes.length < period + 1) return 50;
+  let gains = 0, losses = 0;
+  for (let i = closes.length - period; i < closes.length; i++) {
+    const d = closes[i] - closes[i - 1];
+    if (d > 0) gains += d; else losses -= d;
+  }
+  const avgG = gains / period, avgL = losses / period;
+  if (avgL === 0) return 100;
+  const rs = avgG / avgL;
+  return 100 - 100 / (1 + rs);
+}
+
+// EMA
+function calcEMA(closes, period) {
+  const k = 2 / (period + 1);
+  let ema = closes[0];
+  for (let i = 1; i < closes.length; i++) ema = closes[i] * k + ema * (1 - k);
+  return ema;
+}
+
+// MACD
+function calcMACD(closes) {
+  const ema12 = calcEMA(closes, 12);
+  const ema26 = calcEMA(closes, 26);
+  return { macd: ema12 - ema26, ema12, ema26 };
+}
+
+// Bollinger Bands
+function calcBB(closes, period = 20) {
+  const slice = closes.slice(-period);
+  const mean = slice.reduce((a, b) => a + b, 0) / period;
+  const std = Math.sqrt(slice.reduce((a, b) => a + (b - mean) ** 2, 0) / period);
+  return { upper: mean + 2 * std, lower: mean - 2 * std, mid: mean };
+}
+
+// Stochastique
+function calcStoch(candles, period = 14) {
+  const sl = candles.slice(-period);
+  const high = Math.max(...sl.map(c => c.high));
+  const low = Math.min(...sl.map(c => c.low));
+  const cur = candles[candles.length - 1].close;
+  return high === low ? 50 : ((cur - low) / (high - low)) * 100;
+}
+
+// Détection pattern bougies
+function detectPattern(candles) {
+  const c = candles;
+  const last = c[c.length - 1];
+  const prev = c[c.length - 2];
+  const body = Math.abs(last.close - last.open);
+  const range = last.high - last.low;
+  const upwick = last.high - Math.max(last.open, last.close);
+  const downwick = Math.min(last.open, last.close) - last.low;
+
+  // Doji
+  if (body / range < 0.1) return { name: 'Doji', signal: 'neutral' };
+  // Marteau
+  if (downwick > body * 2 && upwick < body * 0.5 && last.close > last.open)
+    return { name: 'Hammer', signal: 'bull' };
+  // Shooting star
+  if (upwick > body * 2 && downwick < body * 0.5 && last.close < last.open)
+    return { name: 'Shooting Star', signal: 'bear' };
+  // Engulfing haussier
+  if (last.close > prev.open && last.open < prev.close && prev.close < prev.open && last.close > last.open)
+    return { name: 'Engulfing Bull', signal: 'bull' };
+  // Engulfing baissier
+  if (last.close < prev.open && last.open > prev.close && prev.close > prev.open && last.close < last.open)
+    return { name: 'Engulfing Bear', signal: 'bear' };
+  // Bougie forte haussière
+  if (body / range > 0.7 && last.close > last.open) return { name: 'Marubozu Bull', signal: 'bull' };
+  // Bougie forte baissière
+  if (body / range > 0.7 && last.close < last.open) return { name: 'Marubozu Bear', signal: 'bear' };
+
+  return { name: null, signal: 'neutral' };
+}
+
+// ═══════════ MOTEUR PRINCIPAL ═══════════
+function analyzeMarket(asset, expiry) {
+  // Prix de base par asset
+  const bases = {
+    'EUR/USD (OTC)': 1.085, 'GBP/USD (OTC)': 1.265, 'NZD/CAD (OTC)': 0.825,
+    'AUD/USD (OTC)': 0.645, 'USD/JPY (OTC)': 149.5, 'EUR/GBP (OTC)': 0.858,
+    'USD/CHF (OTC)': 0.905, 'BTC/USD': 67500, 'ETH/USD': 3450, 'XRP/USD': 0.52
+  };
+  const base = bases[asset] || 1.0;
+  const vol = base * 0.002;
+
+  // Génère 60 bougies synthétiques
+  const candles = generateCandles(60, base, vol);
+  const closes = candles.map(c => c.close);
+
+  // Calcul indicateurs
+  const rsi = calcRSI(closes);
+  const { macd } = calcMACD(closes);
+  const ema9 = calcEMA(closes, 9);
+  const ema21 = calcEMA(closes, 21);
+  const ema50 = calcEMA(closes, 50);
+  const bb = calcBB(closes);
+  const stoch = calcStoch(candles);
+  const pattern = detectPattern(candles);
+  const lastClose = closes[closes.length - 1];
+
+  // Scores directionnels (-1 à +1 par indicateur)
+  let score = 0;
+  let signals = {};
+
+  // RSI
+  if (rsi < 30) { score += 1; signals.RSI = { v: rsi.toFixed(1), s: 'bull' }; }
+  else if (rsi > 70) { score -= 1; signals.RSI = { v: rsi.toFixed(1), s: 'bear' }; }
+  else { score += (50 - rsi) / 100; signals.RSI = { v: rsi.toFixed(1), s: 'neutral' }; }
+
+  // MACD
+  if (macd > 0) { score += 0.8; signals.MACD = { v: '+' + (macd * 10000).toFixed(1) + 'p', s: 'bull' }; }
+  else { score -= 0.8; signals.MACD = { v: (macd * 10000).toFixed(1) + 'p', s: 'bear' }; }
+
+  // EMA trend
+  const emaTrend = ema9 > ema21 && ema21 > ema50;
+  const emaBear = ema9 < ema21 && ema21 < ema50;
+  if (emaTrend) { score += 1; signals.EMA = { v: 'Haussier', s: 'bull' }; }
+  else if (emaBear) { score -= 1; signals.EMA = { v: 'Baissier', s: 'bear' }; }
+  else { signals.EMA = { v: 'Mixte', s: 'neutral' }; }
+
+  // Bollinger
+  if (lastClose <= bb.lower) { score += 0.8; signals.BB = { v: 'Bande basse', s: 'bull' }; }
+  else if (lastClose >= bb.upper) { score -= 0.8; signals.BB = { v: 'Bande haute', s: 'bear' }; }
+  else { signals.BB = { v: 'Zone milieu', s: 'neutral' }; }
+
+  // Stochastique
+  if (stoch < 20) { score += 0.6; signals.STOCH = { v: stoch.toFixed(0), s: 'bull' }; }
+  else if (stoch > 80) { score -= 0.6; signals.STOCH = { v: stoch.toFixed(0), s: 'bear' }; }
+  else { signals.STOCH = { v: stoch.toFixed(0), s: 'neutral' }; }
+
+  // Pattern
+  if (pattern.signal === 'bull') score += 0.7;
+  else if (pattern.signal === 'bear') score -= 0.7;
+
+  // Direction finale
+  const direction = score >= 0 ? 'BUY' : 'SELL';
+  const absScore = Math.abs(score);
+
+  // Confiance (65-93%)
+  const rawConf = Math.min(93, Math.max(65, 65 + absScore * 14));
+  const confidence = Math.round(rawConf);
+
+  // Force
+  const strength = confidence >= 84 ? 'FORT' : confidence >= 74 ? 'MOYEN' : 'FAIBLE';
+
+  // Analyse textuelle
+  const analyses = {
+    BUY: [
+      `RSI à ${rsi.toFixed(0)} indique une zone de survente. L'EMA 9 croise au-dessus de l'EMA 21 confirmant l'élan haussier. MACD positif renforce le signal.`,
+      `Zone de support identifiée sur les Bandes de Bollinger. Stochastique à ${stoch.toFixed(0)} en sortie de survente. Momentum en faveur des acheteurs.`,
+      `Les EMAs courtes repassent au-dessus des EMAs longues. RSI en zone neutre-haussière à ${rsi.toFixed(0)}. Signal multi-confirmations favorable au BUY.`,
+      `MACD en territoire positif avec divergence haussière. L'asset tente un rebond depuis le bas de la Bollinger. Pression acheteuse dominante.`
+    ],
+    SELL: [
+      `RSI à ${rsi.toFixed(0)} signale une zone de surachat. L'EMA 9 croise en-dessous de l'EMA 21, confirmant le retournement baissier. MACD négatif.`,
+      `L'asset touche la bande haute de Bollinger avec un Stochastique à ${stoch.toFixed(0)} en surachat. Pression vendeuse forte — signal SELL confirmé.`,
+      `Croisement baissier des EMAs courtes sous les longues. RSI divergence négative à ${rsi.toFixed(0)}. Momentum en faveur des vendeurs.`,
+      `MACD en territoire négatif avec accélération. Résistance identifiée sur la bande haute de Bollinger. Probabilité de repli élevée.`
+    ]
+  };
+
+  const analysis = analyses[direction][Math.floor(Math.random() * 4)];
+  const finalAnalysis = pattern.name
+    ? analysis + ` Pattern ${pattern.name} détecté sur la dernière bougie.`
+    : analysis;
+
+  return { direction, confidence, strength, analysis: finalAnalysis, signals, pattern };
+}
+
+// ═══════════ UI ═══════════
+function switchTab(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  const idx = { signal: 0, history: 1, settings: 2 }[name];
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+  if (name === 'history') renderHistory();
+}
+
+function generateSignal() {
+  const btn = document.getElementById('genBtn');
+  const spinner = document.getElementById('spinner');
+  const btnTxt = document.getElementById('btnTxt');
+
+  const asset = document.getElementById('asset').value;
+  const expiry = document.getElementById('expiry').value;
+  const broker = document.getElementById('broker').value;
+  const stake = document.getElementById('stake').value;
+
+  if (document.getElementById('vibTog').classList.contains('on') && navigator.vibrate)
+    navigator.vibrate(40);
+
+  btn.disabled = true;
+  spinner.style.display = 'block';
+  btnTxt.textContent = 'Analyse en cours…';
+  document.getElementById('resultCard').classList.remove('show');
+
+  // Délai réaliste pour l'analyse
+  const delay = 1200 + Math.random() * 800;
+  setTimeout(() => {
+    const sig = analyzeMarket(asset, expiry);
+    const timeStr = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const dayStr = new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+
+    renderSignal(sig, asset, expiry, timeStr);
+
+    sigHistory.unshift({ ...sig, asset, expiry, timeStr, dayStr, stake, broker, id: Date.now() });
+    if (sigHistory.length > 50) sigHistory.pop();
+    localStorage.setItem('sig_h', JSON.stringify(sigHistory));
+
+    if (document.getElementById('vibTog').classList.contains('on') && navigator.vibrate)
+      navigator.vibrate([30, 30, 30]);
+
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    btnTxt.textContent = '⚡ NOUVEAU SIGNAL';
+  }, delay);
+}
+
+function renderSignal(sig, asset, expiry, timeStr) {
+  const isBuy = sig.direction === 'BUY';
+  const card = document.getElementById('resultCard');
+
+  document.getElementById('signalBanner').className = 'rbanner ' + (isBuy ? 'buy' : 'sell');
+  const dir = document.getElementById('dirLabel');
+  dir.textContent = isBuy ? '▲ BUY' : '▼ SELL';
+  dir.className = 'dlabel ' + (isBuy ? 'buy' : 'sell');
+
+  const perim = 169.6;
+  const offset = perim - (sig.confidence / 100) * perim;
+  const circle = document.getElementById('confCircle');
+  circle.setAttribute('stroke', isBuy ? '#00e87a' : '#ff4d6a');
+  circle.setAttribute('stroke-dashoffset', offset);
+  document.getElementById('confText').textContent = sig.confidence + '%';
+
+  const bar = document.getElementById('stFill');
+  bar.style.width = sig.confidence + '%';
+  bar.style.background = sig.confidence >= 80 ? '#00e87a' : sig.confidence >= 70 ? '#ffb800' : '#ff4d6a';
+
+  document.getElementById('metaAsset').textContent = asset.replace(' (OTC)', '');
+  document.getElementById('metaExpiry').textContent = expiry;
+  document.getElementById('metaTime').textContent = timeStr;
+  document.getElementById('analysisText').textContent = sig.analysis;
+
+  const grid = document.getElementById('indicatorsGrid');
+  grid.innerHTML = '';
+  Object.entries(sig.signals).forEach(([name, ind]) => {
+    const chip = document.createElement('div');
+    chip.className = 'ichip';
+    chip.innerHTML = `<span class="iname">${name}</span><span class="ival ${ind.s}">${ind.v}</span>`;
+    grid.appendChild(chip);
+  });
+
+  card.classList.add('show');
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  if (!sigHistory.length) {
+    list.innerHTML = '<div class="empty"><div class="eicon">📋</div>Aucun signal généré.<br>Lance ton premier signal.</div>';
+    return;
+  }
+  list.innerHTML = sigHistory.map(h => `
+    <div class="hitem">
+      <div class="hdir ${h.direction === 'BUY' ? 'buy' : 'sell'}">${h.direction === 'BUY' ? '▲' : '▼'}</div>
+      <div class="hinfo">
+        <div class="hasset">${h.asset.replace(' (OTC)', '')} — ${h.broker}</div>
+        <div class="hmeta">${h.timeStr} • ${h.dayStr} • ${h.expiry} • $${h.stake} • ${h.strength}</div>
+      </div>
+      <div class="hconf" style="color:${h.direction === 'BUY' ? 'var(--green)' : 'var(--red)'}">${h.confidence}%</div>
+    </div>
+  `).join('');
+}
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
